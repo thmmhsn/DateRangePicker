@@ -15,13 +15,14 @@ struct DayCell: View {
   
   var body: some View {
     Text(content)
-      .foregroundColor((isHighlighted || isSelected) ? .accentColor : (isEnabled) ? .primary : .secondary)
+      .foregroundColor((isHighlighted || isSelected) ? .accentColor : (isEnabled) ? Color(.systemBackground) : Color(.secondarySystemBackground))
       .fontWeight(isSelected ? .bold : .regular)
+      .monospacedDigit()
       .padding([.top, .bottom], 8)
       .padding([.leading, .trailing], 8)
       .background {
-        Circle()
-          .foregroundColor(isSelected ? Color.accentColor.opacity(0.1) : .clear)
+          RoundedRectangle(cornerRadius: 10.0)
+          .foregroundColor(isSelected ? Color.accentColor.opacity(0.2) : .clear)
       }
       .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
   }

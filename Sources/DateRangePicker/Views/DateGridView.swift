@@ -20,7 +20,7 @@ struct DateGridView: View {
     LazyVGrid(
       columns: Array(repeating: GridItem(.flexible()), count: numberOfDaysInAWeek),
       alignment: .center,
-      spacing: 12
+      spacing: 8
     ) {
       ForEach(dates, id: \.timeIntervalSinceReferenceDate) { date in
         let dateValidity = dateValidator(date)
@@ -37,7 +37,7 @@ struct DateGridView: View {
         .disabled(dateValidity == .unavailable)
       }
     }
-    .padding([.leading, .trailing], 12)
+    .padding([.leading, .trailing], 8)
   }
 }
 

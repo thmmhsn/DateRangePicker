@@ -19,8 +19,7 @@ import SwiftUI
 /// The date range picker always uses the calendar style. This style cannot be customized or changed.
 public struct DateRangePicker: View {
   enum Mode {
-    case  calendar,
-          picker
+    case calendar, picker
   }
   
   let calendar: Calendar
@@ -33,7 +32,7 @@ public struct DateRangePicker: View {
   
   @Binding var visibleMonth: Int
   @Binding var visibleYear: Int
-  @Binding var selection: OpenDateInterval?
+  @Binding var selection: [Date]
   
   @State private var months = [Date]()
   @State private var years = [Date]()
@@ -44,7 +43,7 @@ public struct DateRangePicker: View {
     calendar: Calendar = .autoupdatingCurrent,
     month: Binding<Int>,
     year: Binding<Int>,
-    selection: Binding<OpenDateInterval?>,
+    selection: Binding<[Date]>,
     minimumDate: Date? = nil,
     maximumDate: Date? = nil
   ) {
@@ -55,26 +54,32 @@ public struct DateRangePicker: View {
     self.minimumDate = minimumDate
     self.maximumDate = maximumDate
     
-    datesGenerator = .init(
-      calendar: calendar
-    )
-    dateValidator = .init(
-      calendar: calendar,
-      minimumDate: minimumDate,
-      maximumDate: maximumDate
-    )
-    selectionManager = .init(
-      calendar: calendar
-    )
+    datesGenerator = .init(calendar: calendar)
+    dateValidator = .init(calendar: calendar, minimumDate: minimumDate, maximumDate: maximumDate)
+    selectionManager = .init(calendar: calendar)
   }
+    
+    var isCurrentDate : Bool {
+        let calendar = Calendar.current
+        let month = calendar.component(.month, from: Date())
+        if month != self.visibleMonth{
+            return false
+        }
+        let year = calendar.component(.year, from: Date())
+        if year != self.visibleYear{
+            return false
+        }
+        return true
+    }
   
   public var body: some View {
     VStack {
       HStack(alignment: .center) {
+          
         Button(action: toggleMode) {
           HStack {
             Text(formattedMonthYear)
-              .foregroundColor(mode == .picker ? .accentColor : .primary)
+                  .foregroundColor(mode == .picker ? .accentColor : Color(.systemBackground))
               .bold()
               .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
 
@@ -89,6 +94,15 @@ public struct DateRangePicker: View {
         Spacer()
 
         HStack(spacing: 20) {
+            Button{
+                self.visibleMonth = Calendar.current.component(.month, from: Date())
+                self.visibleYear = Calendar.current.component(.year, from: Date())
+            }label: {
+                Image(systemName:"calendar.badge.clock")
+                    .imageScale(.large)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            }.disabled(isCurrentDate)
+            
           Button(action: { increaseMonth(by: -1) }) {
             Image(systemName: "chevron.left")
               .imageScale(.large)
@@ -113,14 +127,13 @@ public struct DateRangePicker: View {
           HStack(spacing: 0) {
             ForEach(calendar.orderedShortWeekdaySymbols, id: \.self) { weekday in
               Text(weekday.uppercased())
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-                .bold()
+                .foregroundStyle(Color(.secondarySystemBackground))
+                .font(.system(size: 12.0, weight: .semibold, design: .default))
                 .frame(maxWidth: .infinity, alignment: .center)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             }
           }
-          .padding([.leading, .trailing], 6)
+          .padding([.leading, .trailing], 4)
           .frame(maxWidth: .infinity, alignment: .leading)
           
           DateGridView(
@@ -130,16 +143,16 @@ public struct DateRangePicker: View {
             selectionProvider: isDateSelected(_:),
             selectionHandler: select(date:)
           )
-          .gesture(
-            DragGesture()
-              .onEnded { value in
-                if value.translation.width > 0 {
-                  increaseMonth(by: -1)
-                } else {
-                  increaseMonth(by: 1)
-                }
-              }
-          )
+//          .gesture(
+//            DragGesture()
+//              .onEnded { value in
+//                if value.translation.width > 0 {
+//                  increaseMonth(by: -1)
+//                } else {
+//                  increaseMonth(by: 1)
+//                }
+//              }
+//          )
         }
       case .picker:
         MonthYearPickerView(
@@ -168,6 +181,7 @@ public struct DateRangePicker: View {
         visibleMonth = calendar.component(.month, from: firstAvailableMonth)
       }
     }
+    
   }
 }
 
@@ -196,10 +210,10 @@ private extension DateRangePicker {
 // MARK: - Logic
 private extension DateRangePicker {
   func select(date: Date) {
-    selection = selectionManager.append(
-      date,
-      to: selection
-    )
+    selectionManager.toggle(date: date, in: &selection)
+      let impact = UIImpactFeedbackGenerator(style: .soft)
+      impact.impactOccurred()
+
   }
   
   func toggleMode() {
@@ -262,7 +276,7 @@ private extension DateRangePicker {
   }
   
   func isDateSelected(_ date: Date) -> Bool {
-    selection?.contains(date) == true
+    selection.contains(date)
   }
   
   func date(fromYear year: Int, month: Int) -> Date? {
@@ -282,71 +296,5 @@ private extension DateRangePicker {
     let formatter = DateFormatter()
     formatter.dateFormat = "MMMM YYYY"
     return formatter.string(from: visibleDate)
-  }
-}
-
-// MARK: - Preview
-struct DateRangePicker_Previews: PreviewProvider {
-  private struct Preview: View {
-    let calendar: Calendar
-    
-    @State private var month = 09
-    @State private var year = 2023
-    @State private var range: OpenDateInterval?
-    
-    private var dateFormatter: DateFormatter {
-      let dateFormatter = DateFormatter()
-      dateFormatter.dateStyle = .short
-      dateFormatter.timeStyle = .short
-      return dateFormatter
-    }
-    
-    var body: some View {
-      VStack(spacing: 20) {
-//        if let range, let end = range.end {
-//          Text("\(dateFormatter.string(from: range.start)) -> \(dateFormatter.string(from: end)) - \(Int(ceil(range.duration/86_400))) days")
-//            .font(.callout)
-//            .padding()
-//            .multilineTextAlignment(.center)
-//        }
-        
-        DateRangePicker(
-          calendar: calendar,
-          month: $month,
-          year: $year,
-          selection: $range,
-          minimumDate: Date.date(from: "2023-09-05"),
-          maximumDate: Date.date(from: "2024-11-21")
-        )
-      }
-    }
-  }
-  
-  static var previews: some View {
-    Group {
-      Preview(
-        calendar: Calendar.gregorianEnglish
-      )
-      .previewDisplayName("Gregorian - English")
-      
-      Preview(
-        calendar: Calendar.gregorianItalian
-      )
-      .previewDisplayName("Gregorian - Italian")
-    }
-  }
-}
-
-private extension Calendar {
-  static var gregorianEnglish: Calendar {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.locale = Locale(identifier: "en-US")
-    return calendar
-  }
-  
-  static var gregorianItalian: Calendar {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.locale = Locale(identifier: "it-IT")
-    return calendar
   }
 }
