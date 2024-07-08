@@ -22,6 +22,7 @@ struct MonthYearPickerView: View {
         ForEach($months, id: \.self) { $monthDate in
           Text(monthDate.formattedMonth ?? "")
             .tag(monthDate.monthComponent(in: calendar))
+            .foregroundStyle(Color.gray)
         }
       }
       .pickerStyle(.wheel)
@@ -30,6 +31,7 @@ struct MonthYearPickerView: View {
         ForEach($years, id: \.self) { $yearDate in
           Text(yearDate.formattedYear ?? "")
             .tag(yearDate.yearComponent(in: calendar))
+            .foregroundStyle(Color.gray)
         }
       }
       .pickerStyle(.wheel)
